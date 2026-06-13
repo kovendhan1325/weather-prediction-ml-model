@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Machine Learning weather prediction web app trained on the Seattle weather dataset. Predicts rain, sun, fog, drizzle and snow.">
+    <title>Weather Prediction Model</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ── Hero ───────────────────────────────────────────── -->
+    <div class="hero">
+        <h1>🌤 Weather Prediction Model</h1>
+    </div>
+
+    <!-- ── Model Info Chips ────────────────────────────────── -->
+    <div class="info-box">
+        <div class="info-chip">
+            <span class="label">Best Model</span>
+            <span class="value">Random Forest</span>
+        </div>
+        <div class="info-chip">
+            <span class="label">Test Accuracy</span>
+            <span class="value">84.64%</span>
+        </div>
+        <div class="info-chip">
+            <span class="label">Dataset</span>
+            <span class="value">Seattle Weather</span>
+        </div>
+    </div>
+
+    <!-- ── Form Card ─────────────────────────────────────── -->
+    <div class="card" id="form-card">
+        <h2>Enter Weather Details</h2>
+
+        <form id="predict-form" novalidate>
+
+            <div class="input-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+
+            <div class="input-group">
+                <label for="precipitation">Precipitation (mm)
+                    <span class="hint">0 – 200</span>
+                </label>
+                <input type="number" id="precipitation" step="0.1" name="precipitation"
+                       placeholder="e.g. 0.0" min="0" max="200" required>
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="temp_max">Max Temp (°C)
+                        <span class="hint">−20 to 50</span>
+                    </label>
+                    <input type="number" id="temp_max" step="0.1" name="temp_max"
+                           placeholder="e.g. 12.8" min="-20" max="50" required>
+                </div>
+                <div class="input-group">
+                    <label for="temp_min">Min Temp (°C)
+                        <span class="hint">−20 to 50</span>
+                    </label>
+                    <input type="number" id="temp_min" step="0.1" name="temp_min"
+                           placeholder="e.g. 5.0" min="-20" max="50" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="wind">Wind Speed (km/h)
+                    <span class="hint">0 – 150</span>
+                </label>
+                <input type="number" id="wind" step="0.1" name="wind"
+                       placeholder="e.g. 4.7" min="0" max="150" required>
+            </div>
+
+            <button type="submit" id="predict-btn">⚡ Predict Weather</button>
+
+        </form>
+
+        <!-- Result (hidden until prediction) -->
+        <div class="result" id="result" style="display:none;">
+            <h3 id="result-title"></h3>
+            <p class="result-msg" id="result-msg"></p>
+
+            <div class="confidence-badge" id="confidence-wrap" style="display:none;">
+                <span id="confidence-text"></span>
+            </div>
+
+            <div class="conf-breakdown" id="breakdown-wrap" style="display:none;">
+                <p class="breakdown-title">Probability Breakdown</p>
+                <div id="breakdown-bars"></div>
+            </div>
+        </div>
+
+    </div>
+
+</div><!-- /.container -->
+
+<script src="predict.js"></script>
+</body>
+</html>
