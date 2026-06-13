@@ -8,13 +8,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
+<body class="" data-weather="">
+
+<!-- ── Weather Animation Overlays ─────────────────────────── -->
+<canvas id="weather-canvas"></canvas>
+<div class="fog-layer fog-layer-1"></div>
+<div class="fog-layer fog-layer-2"></div>
+<div class="sun-orb"></div>
 
 <div class="container">
 
     <!-- ── Hero ───────────────────────────────────────────── -->
     <div class="hero">
         <h1>🌤 Weather Prediction Model</h1>
+        <button id="mute-btn" class="mute-btn" type="button">🔊 Sound On</button>
     </div>
 
     <!-- ── Model Info Chips ────────────────────────────────── -->
@@ -80,6 +87,12 @@
             <button type="submit" id="predict-btn">⚡ Predict Weather</button>
 
         </form>
+
+        <!-- Loading Animation -->
+        <div id="loading-container" style="display: none; text-align: center; margin-top: 20px;">
+            <div class="spinner"></div>
+            <p id="loading-text" style="color: #bae6fd; font-weight: bold; margin-top: 10px;">Analyzing weather data...</p>
+        </div>
 
         <!-- Result (hidden until prediction) -->
         <div class="result" id="result" style="display:none;">

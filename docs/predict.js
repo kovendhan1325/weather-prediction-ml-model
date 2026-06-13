@@ -108,11 +108,11 @@ function predictWeather(f) {
 
 // ── Weather metadata ──────────────────────────────────────
 const WEATHER_META = {
-    sun:     { emoji: '☀️',  message: 'Sunny weather is expected. Great day for outdoor activities!' },
-    rain:    { emoji: '🌧️',  message: 'Rainy weather expected. Carry an umbrella and travel carefully.' },
-    fog:     { emoji: '🌫️',  message: 'Foggy conditions expected. Visibility may be low — drive carefully.' },
-    drizzle: { emoji: '🌦️',  message: 'Light drizzle expected. A light jacket or umbrella may help.' },
-    snow:    { emoji: '❄️',  message: 'Snowy weather expected. Stay warm and avoid risky travel.' },
+    sun:     { emoji: '☀️',  message: 'Stay hydrated and avoid too much heat.' },
+    rain:    { emoji: '🌧️',  message: 'Carry an umbrella and travel carefully.' },
+    fog:     { emoji: '🌫️',  message: 'Drive slowly because visibility may be low.' },
+    drizzle: { emoji: '🌦️',  message: 'Carry light rain protection.' },
+    snow:    { emoji: '❄️',  message: 'Wear warm clothes and avoid risky travel.' },
 };
 
 // ── Input validation ──────────────────────────────────────
@@ -185,8 +185,160 @@ function showResult(label, confidence, probabilities, isError = false) {
     });
 }
 
+// ── Audio Engine & Animations ──────────────────────────────
+const audioMap = {
+    'rain-mode': 'https://actions.google.com/sounds/v1/weather/rain_heavy_loud.ogg',
+    'sun-mode': 'https://actions.google.com/sounds/v1/ambiences/birds_in_forest.ogg',
+    'snow-mode': 'https://actions.google.com/sounds/v1/weather/winter_wind.ogg',
+    'fog-mode': 'https://actions.google.com/sounds/v1/ambiences/creepy_wind.ogg',
+    'drizzle-mode': 'https://actions.google.com/sounds/v1/weather/rain_on_roof.ogg'
+};
+
+let currentAudio = null;
+let isMuted = false;
+const muteBtn = document.getElementById('mute-btn');
+
+if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+        isMuted = !isMuted;
+        muteBtn.textContent = isMuted ? '🔇 Sound Off' : '🔊 Sound On';
+        if (currentAudio) currentAudio.muted = isMuted;
+    });
+}
+
+function playSoundForWeather(weatherClass) {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+    if (audioMap[weatherClass]) {
+        currentAudio = new Audio(audioMap[weatherClass]);
+        currentAudio.loop = true;
+        currentAudio.muted = isMuted;
+        currentAudio.play().catch(e => console.log('Audio autoplay blocked', e));
+    }
+}
+
+const canvas = document.getElementById('weather-canvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+let particles = [];
+let animId;
+
+function resize() {
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function spawnRain(count, config) {
+    particles = [];
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            len: config.len[0] + Math.random() * config.len[1],
+            speed: config.speed[0] + Math.random() * config.speed[1],
+            alpha: config.alpha[0] + Math.random() * config.alpha[1],
+            width: config.width,
+        });
+    }
+}
+
+function drawRain(color) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.strokeStyle = color;
+    particles.forEach(p => {
+        ctx.globalAlpha = p.alpha;
+        ctx.lineWidth = p.width;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.len * 0.15, p.y + p.len);
+        ctx.stroke();
+        p.y += p.speed;
+        if (p.y > canvas.height) { p.y = -p.len; p.x = Math.random() * canvas.width; }
+    });
+    ctx.restore();
+}
+
+function spawnSnow(count) {
+    particles = [];
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: 2 + Math.random() * 5,
+            speed: 0.4 + Math.random() * 1.2,
+            drift: (Math.random() - 0.5) * 0.4,
+            alpha: 0.55 + Math.random() * 0.45,
+            wobble: Math.random() * Math.PI * 2,
+        });
+    }
+}
+
+function drawSnow() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#c8e6ff';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        p.wobble += 0.015;
+        p.x += p.drift + Math.sin(p.wobble) * 0.3;
+        p.y += p.speed;
+        if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+    });
+}
+
+function loop(drawFn, color) {
+    drawFn(color);
+    animId = requestAnimationFrame(() => loop(drawFn, color));
+}
+
+function applyWeatherState(weatherClass) {
+    document.body.className = weatherClass;
+    document.body.dataset.weather = weatherClass;
+    
+    if (animId) cancelAnimationFrame(animId);
+    if (canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+    }
+
+    if (weatherClass === 'rain-mode') {
+        canvas.style.display = 'block';
+        spawnRain(200, { len:[18,24], speed:[12,10], alpha:[0.25,0.4], width:1.2 });
+        loop(drawRain, 'rgba(174,214,241,1)');
+    } else if (weatherClass === 'drizzle-mode') {
+        canvas.style.display = 'block';
+        spawnRain(120, { len:[8,10], speed:[5,4], alpha:[0.18,0.25], width:0.8 });
+        loop(drawRain, 'rgba(200,230,255,1)');
+    } else if (weatherClass === 'snow-mode') {
+        canvas.style.display = 'block';
+        spawnSnow(160);
+        loop(drawSnow);
+    }
+    
+    playSoundForWeather(weatherClass);
+    document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // ── Form submit handler ───────────────────────────────────
-document.getElementById('predict-form').addEventListener('submit', function (e) {
+const loadingMessages = [
+    "Analyzing weather data...",
+    "Processing machine learning model...",
+    "Generating weather prediction...",
+    "Preparing visual animation..."
+];
+
+document.getElementById('predict-form').addEventListener('submit', async function (e) {
     e.preventDefault();
 
     const date          = document.getElementById('date').value;
@@ -201,7 +353,36 @@ document.getElementById('predict-form').addEventListener('submit', function (e) 
         return;
     }
 
+    const predictBtn = document.getElementById('predict-btn');
+    const loadingContainer = document.getElementById('loading-container');
+    const loadingText = document.getElementById('loading-text');
+    const resultDiv = document.getElementById('result');
+
+    predictBtn.disabled = true;
+    resultDiv.style.display = 'none';
+    loadingContainer.style.display = 'block';
+
+    let msgIndex = 0;
+    loadingText.textContent = loadingMessages[msgIndex];
+    const msgInterval = setInterval(() => {
+        msgIndex++;
+        if (msgIndex < loadingMessages.length) {
+            loadingText.textContent = loadingMessages[msgIndex];
+        }
+    }, 800);
+
+    // Predict
     const features = computeFeatures(date, precipitation, temp_max, temp_min, wind);
     const { label, confidence, probabilities } = predictWeather(features);
+
+    // Wait until all messages are shown (approx 3.2 seconds total)
+    const minWait = loadingMessages.length * 800;
+    await new Promise(resolve => setTimeout(resolve, minWait));
+
+    clearInterval(msgInterval);
+    loadingContainer.style.display = 'none';
+    predictBtn.disabled = false;
+
     showResult(label, confidence, probabilities);
+    applyWeatherState(label + "-mode");
 });
